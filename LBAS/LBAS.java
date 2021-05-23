@@ -55,7 +55,7 @@ public class LBAS {
         String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
 		System.out.println("Success: "+reservation_id);
 		*/
-
+	//teste
 		// STARTING INSTANCE
 		/*
 		StartInstancesRequest start_request = new StartInstancesRequest()
