@@ -67,7 +67,7 @@ public class LBAS {
 		// STOPPING INSTANCE
 		/*
 		StopInstancesRequest request = new StopInstancesRequest()
-    		.withInstanceIds(instance_id);
+    		.withInstanceIds("i-0afe583789a8a2ec2");
 
 		ec2.stopInstances(request);
 		*/
