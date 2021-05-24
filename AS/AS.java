@@ -1,4 +1,4 @@
-package LBAS;
+package AS;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,7 +33,7 @@ import com.amazonaws.services.cloudwatch.model.DescribeAlarmsRequest;
 import com.amazonaws.services.cloudwatch.model.DescribeAlarmsResult;
 import com.amazonaws.services.cloudwatch.model.MetricAlarm;
 
-public class LBAS {
+public class AS {
 
     public static void main(final String[] args) throws IOException {
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
