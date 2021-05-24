@@ -18,3 +18,15 @@ Thread 12:
 Blocks: 9195558
 Request: GRID_SCAN
 Square: (128,128) to (384,384)
+Thread 12:
+Blocks: 13571964
+Request: GRID_SCAN
+Square: (128,128) to (384,384)
+Thread 12:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (128,128) to (384,384)
+Thread 15:
+Blocks: 38005
+Request: GREEDY_RANGE_SCAN
+Square: (128,128) to (384,384)

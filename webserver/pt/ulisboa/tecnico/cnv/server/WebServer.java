@@ -46,9 +46,9 @@ public class WebServer {
 
 		System.out.println("> Finished parsing Server args.");
 
-		//final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
+		final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
 
-		final HttpServer server = HttpServer.create(new InetSocketAddress(WebServer.sap.getServerAddress(), WebServer.sap.getServerPort()), 0);
+		//final HttpServer server = HttpServer.create(new InetSocketAddress(WebServer.sap.getServerAddress(), WebServer.sap.getServerPort()), 0);
 
 		server.createContext("/scan", new MyHandler());
 
@@ -183,12 +183,8 @@ public class WebServer {
 				e.printStackTrace();
 			}
 
-
-
 			// Send response to browser.
 			final Headers hdrs = t.getResponseHeaders();
-
-			
 
 			hdrs.add("Content-Type", "image/png");
 
@@ -201,8 +197,6 @@ public class WebServer {
 
 			final OutputStream os = t.getResponseBody();
 			Files.copy(responseFile.toPath(), os);
-
-
 			os.close();
 
 			System.out.println("> Sent response to " + t.getRemoteAddress().toString());

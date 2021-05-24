@@ -1,11 +1,15 @@
-package LB;
+package lb;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+
+import org.apache.commons.io.IOUtils;
 
 import java.net.InetSocketAddress;
 
@@ -21,6 +25,9 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.net.HttpURLConnection;
 
 import com.amazonaws.services.ec2.AmazonEC2;
@@ -50,7 +57,7 @@ public class LoadBalancer {
 
     public static void main(final String[] args) throws IOException {
 		final String serverAddress = "0.0.0.0"; //localhost for now
-        final int serverPort = 8000;
+        final int serverPort = 8001;
 
         final HttpServer server = HttpServer.create(new InetSocketAddress(serverAddress, serverPort), 0);
 
@@ -72,43 +79,51 @@ public class LoadBalancer {
 			//Then chooses the best instance to send
 
 			//Then sends the request it got to the chosen instance
-			String result = "Hello :D";
-			byte[] response = result.getBytes();
-        	exchange.sendResponseHeaders(200, response.length);
+			String instanceIP = "127.0.0.1";
+			InputStream in = sendRequestToWebServer(instanceIP, query);
+
+			//Then waits for the request to come back from the instance
+
+			//Then returns the results back to the user
+			final Headers hdrs = exchange.getResponseHeaders();
+
+			hdrs.add("Content-Type", "image/png");
+			hdrs.add("Access-Control-Allow-Origin", "*");
+			hdrs.add("Access-Control-Allow-Credentials", "true");
+			hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
+			hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+			
+        	exchange.sendResponseHeaders(200, in.available());
         	OutputStream os = exchange.getResponseBody();
-        	os.write(response);
+
+			IOUtils.copy(in, os);
+			in.close();
         	os.close();
 			
             System.out.println("> Sent response to " + exchange.getRemoteAddress().toString());
 		}
 	}
 
-	private static void sendRequestToWebServer(String instanceIP) throws IOException{
-		String serverAddress = "0";
-		String serverPort = "0";
-		String scan_type = "0";
-		String area = "0";
+	private static InputStream sendRequestToWebServer(String instanceIP, String query) throws IOException{
+		int serverPort = 8000;
 
-		URL url = new URL("http://"+serverAddress+":"+serverPort+"/getEstimateMetric?st="+scan_type+"&area="+area);
+		URL url = new URL("http://"+instanceIP+":"+serverPort+"/scan?"+query);
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
 		int status = connection.getResponseCode();
 		System.out.println("Status: "+status);
 
-		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-		
-		String response = in.readLine(); //1st line is descriptive
-		int result = Integer.parseInt(in.readLine()); //2nd line is actual result
-		in.close();
+		InputStream in = connection.getInputStream();
 
-		System.out.println("Finished reading: "+response);
+		System.out.println("Finished reading");
 
 		connection.disconnect();
 		System.out.println("Connection closed.");
+
+		return in;
 	}
 
 	private static class ReceiveResultHandler implements HttpHandler {
-
 		@Override
 		public void handle(final HttpExchange exchange) throws IOException {
 			System.out.println("Hewo.");
