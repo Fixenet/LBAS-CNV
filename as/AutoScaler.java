@@ -33,7 +33,7 @@ import com.amazonaws.services.cloudwatch.model.DescribeAlarmsRequest;
 import com.amazonaws.services.cloudwatch.model.DescribeAlarmsResult;
 import com.amazonaws.services.cloudwatch.model.MetricAlarm;
 
-public class AS {
+public class AutoScaler {
 
     public static void main(final String[] args) throws IOException {
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();

@@ -33,7 +33,7 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
 
-public class MSS {
+public class MetricStorageSystem {
 	private static final AmazonDynamoDB client = AmazonDynamoDBClientBuilder.defaultClient();
 	private static final DynamoDB dynamoDB = new DynamoDB(client);
 	private static Table table;
