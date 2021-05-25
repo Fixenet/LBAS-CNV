@@ -71,14 +71,12 @@ public class amazonExample {
                 		"AMI %s, " +
                 		"type %s, " +
 						"ip %s, " +
-                		"state %s " +
-                		"and monitoring state %s\n",
+                		"state %s ",
                 		instance.getInstanceId(),
                 		instance.getImageId(),
                 		instance.getInstanceType(),
 						instance.getPublicIpAddress(),
-                		instance.getState().getName(),
-                		instance.getMonitoring().getState());
+                		instance.getState().getName());
         		}
     		}
 

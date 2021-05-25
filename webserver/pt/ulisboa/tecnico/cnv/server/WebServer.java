@@ -46,9 +46,9 @@ public class WebServer {
 
 		System.out.println("> Finished parsing Server args.");
 
-		final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
+		//final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
 
-		//final HttpServer server = HttpServer.create(new InetSocketAddress(WebServer.sap.getServerAddress(), WebServer.sap.getServerPort()), 0);
+		final HttpServer server = HttpServer.create(new InetSocketAddress(WebServer.sap.getServerAddress(), WebServer.sap.getServerPort()), 0);
 
 		server.createContext("/scan", new MyHandler());
 
@@ -183,8 +183,16 @@ public class WebServer {
 				e.printStackTrace();
 			}
 
-			t.sendResponseHeaders(200, responseFile.length());
+			final Headers hdrs = t.getResponseHeaders();
 
+			hdrs.add("Content-Type", "image/png");
+			hdrs.add("Access-Control-Allow-Origin", "*");
+			hdrs.add("Access-Control-Allow-Credentials", "true");
+			hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
+			hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+
+			t.sendResponseHeaders(200, responseFile.length());
+			
 			final OutputStream os = t.getResponseBody();
 			Files.copy(responseFile.toPath(), os);
 

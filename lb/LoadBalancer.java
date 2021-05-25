@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -38,26 +40,6 @@ public class LoadBalancer {
 	private static Map<String, ArrayList<Integer>> ICountSeparateMap = new HashMap<String, ArrayList<Integer>>();
 
     public static void main(final String[] args) throws IOException {
-		updateInstanceStates("ID 1", 1000);
-		getInstanceStates();
-
-		updateInstanceStates("ID 1", 4000);
-		updateInstanceStates("ID 1", 4000);
-		updateInstanceStates("ID 1", 4000);
-		getInstanceStates();
-
-		updateInstanceStates("ID 2", 1000);
-		getInstanceStates();
-
-		updateInstanceStates("ID 1", -4000);
-		getInstanceStates();
-
-		updateInstanceStates("ID 1", -2000);
-		getInstanceStates();
-
-		updateInstanceStates("ID 1", -1000);
-		getInstanceStates();
-
         final HttpServer server = HttpServer.create(new InetSocketAddress(serverAddress, serverPort), 0);
 
 		server.createContext("/scan", new LBToWebserverHandler());
@@ -99,7 +81,7 @@ public class LoadBalancer {
 
 			//Then sends the request it got to the chosen instance
 			String chosenInstanceIP = "127.0.0.1";
-			InputStream in = sendRequestToWebServer(chosenInstanceIP, query);
+			HttpURLConnection connection = sendRequestToWebServer(chosenInstanceIP, query);
 
 			//Then waits for the request to come back from the instance
 
@@ -112,16 +94,28 @@ public class LoadBalancer {
 			hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
 			hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 			
-        	exchange.sendResponseHeaders(200, in.available());
+			InputStream in = connection.getInputStream();
         	OutputStream os = exchange.getResponseBody();
 
-			File responseFile = new File("./tmp/result.png");
+			exchange.sendResponseHeaders(200, connection.getContentLength());
 
-			Files.copy(in, responseFile.toPath());
-			Files.copy(responseFile.toPath(), os);
+			try {
+				byte[] buf = new byte[8192];
+				int length;
+				while ((length = in.read(buf)) > 0) {
+					os.write(buf, 0, length);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 
+			System.out.println("Finished reading.");
+
+			os.close();
 			in.close();
-        	os.close();
+			connection.disconnect();
+
+			System.out.println("Connection and Streams closed.");
 			
             System.out.println("> Sent response to " + exchange.getRemoteAddress().toString());
 		}
@@ -179,7 +173,7 @@ public class LoadBalancer {
 		return result;
 	}
 
-	private static InputStream sendRequestToWebServer(String instanceIP, String query) throws IOException{
+	private static HttpURLConnection sendRequestToWebServer(String instanceIP, String query) throws IOException{
 		int serverPort = 8000;
 
 		URL url = new URL("http://"+instanceIP+":"+serverPort+"/scan?"+query);
@@ -188,13 +182,6 @@ public class LoadBalancer {
 		int status = connection.getResponseCode();
 		System.out.println("Status: "+status);
 
-		InputStream in = connection.getInputStream();
-
-		System.out.println("Finished reading");
-
-		connection.disconnect();
-		System.out.println("Connection closed.");
-
-		return in;
+		return connection;
 	}
 }
