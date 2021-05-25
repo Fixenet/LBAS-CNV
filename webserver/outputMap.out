@@ -30,3 +30,175 @@ Thread 15:
 Blocks: 38005
 Request: GREEDY_RANGE_SCAN
 Square: (128,128) to (384,384)
+Thread 16:
+Blocks: 38005
+Request: GREEDY_RANGE_SCAN
+Square: (128,128) to (384,384)
+Thread 12:
+Blocks: 107434
+Request: PROGRESSIVE_SCAN
+Square: (118,41) to (374,297)
+Thread 15:
+Blocks: 74540
+Request: GREEDY_RANGE_SCAN
+Square: (76,46) to (332,302)
+Thread 16:
+Blocks: 104606
+Request: PROGRESSIVE_SCAN
+Square: (130,97) to (386,353)
+Thread 17:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (189,164) to (445,420)
+Thread 17:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (189,164) to (445,420)
+Thread 17:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (189,164) to (445,420)
+Thread 18:
+Blocks: 94997
+Request: GREEDY_RANGE_SCAN
+Square: (144,178) to (400,434)
+Thread 18:
+Blocks: 94997
+Request: GREEDY_RANGE_SCAN
+Square: (144,178) to (400,434)
+Thread 18:
+Blocks: 94997
+Request: GREEDY_RANGE_SCAN
+Square: (144,178) to (400,434)
+Thread 18:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (111,186) to (367,442)
+Thread 18:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (111,186) to (367,442)
+Thread 18:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (111,186) to (367,442)
+Thread 18:
+Blocks: 94945
+Request: GREEDY_RANGE_SCAN
+Square: (111,186) to (367,442)
+Thread 18:
+Blocks: 94945
+Request: GREEDY_RANGE_SCAN
+Square: (111,186) to (367,442)
+Thread 18:
+Blocks: 94945
+Request: GREEDY_RANGE_SCAN
+Square: (111,186) to (367,442)
+Thread 18:
+Blocks: 94945
+Request: GREEDY_RANGE_SCAN
+Square: (111,186) to (367,442)
+Thread 19:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (153,148) to (409,404)
+Thread 19:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (153,148) to (409,404)
+Thread 19:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (153,148) to (409,404)
+Thread 19:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (153,148) to (409,404)
+Thread 19:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (153,148) to (409,404)
+Thread 19:
+Blocks: 96993
+Request: PROGRESSIVE_SCAN
+Square: (153,148) to (409,404)
+Thread 20:
+Blocks: 95308
+Request: GREEDY_RANGE_SCAN
+Square: (85,100) to (341,356)
+Thread 20:
+Blocks: 95308
+Request: GREEDY_RANGE_SCAN
+Square: (85,100) to (341,356)
+Thread 20:
+Blocks: 95308
+Request: GREEDY_RANGE_SCAN
+Square: (85,100) to (341,356)
+Thread 20:
+Blocks: 95308
+Request: GREEDY_RANGE_SCAN
+Square: (85,100) to (341,356)
+Thread 20:
+Blocks: 96875
+Request: GREEDY_RANGE_SCAN
+Square: (85,100) to (341,356)
+Thread 21:
+Blocks: 8915467
+Request: GRID_SCAN
+Square: (85,100) to (341,356)
+Thread 22:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (128,128) to (384,384)
+Thread 23:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (128,128) to (384,384)
+Thread 12:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (184,197) to (440,453)
+Thread 12:
+Blocks: 123471
+Request: PROGRESSIVE_SCAN
+Square: (62,224) to (318,480)
+Thread 12:
+Blocks: 123471
+Request: PROGRESSIVE_SCAN
+Square: (62,224) to (318,480)
+Thread 12:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (91,175) to (347,431)
+Thread 12:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (168,78) to (424,334)
+Thread 12:
+Blocks: 125661
+Request: PROGRESSIVE_SCAN
+Square: (13,74) to (269,330)
+Thread 15:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (64,72) to (320,328)
+Thread 15:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (64,72) to (320,328)
+Thread 15:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (64,72) to (320,328)
+Thread 15:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (64,72) to (320,328)
+Thread 15:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (64,72) to (320,328)
+Thread 15:
+Blocks: 126635
+Request: PROGRESSIVE_SCAN
+Square: (64,72) to (320,328)
