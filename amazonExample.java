@@ -18,8 +18,10 @@ import com.amazonaws.services.cloudwatch.model.DescribeAlarmsRequest;
 import com.amazonaws.services.cloudwatch.model.DescribeAlarmsResult;
 import com.amazonaws.services.cloudwatch.model.MetricAlarm;
 
+import java.io.IOException;
+
 public class amazonExample {
-    public void example(){
+    public static void main(final String[] args) throws IOException {
 		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		// CREATING INSTANCE, isto talvez só exista no inicio do nosso sistema
