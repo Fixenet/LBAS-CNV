@@ -1,129 +1,37 @@
-package AS;
+package as;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
 
-import java.net.InetSocketAddress;
-
-import java.util.ArrayList;
-import java.util.concurrent.Executors;
-
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-
-import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-
-import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.ec2.model.RunInstancesResult;
-import com.amazonaws.services.ec2.model.InstanceType;
-
-import com.amazonaws.services.ec2.model.StartInstancesRequest;
-
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.Reservation;
-
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
-import com.amazonaws.services.cloudwatch.model.DescribeAlarmsRequest;
-import com.amazonaws.services.cloudwatch.model.DescribeAlarmsResult;
-import com.amazonaws.services.cloudwatch.model.MetricAlarm;
+import java.net.URL;
+import java.net.HttpURLConnection;
 
 public class AutoScaler {
-
+	//LoadBalancer
+	private static final String LBserverAddress = "127.0.0.1"; //localhost because they are running on the same machine
+	private static final int LBserverPort = 8001;
     public static void main(final String[] args) throws IOException {
-		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
-
-		// CREATING INSTANCE, isto talvez só exista no inicio do nosso sistema
-		// depois damos start e stop às instancias conforme necessário 
-		// TALVEZ, isto pq n vejo como dar terminate a instances pelo SDK
-
-        RunInstancesRequest run_request = new RunInstancesRequest()
-			.withImageId("ami-0d5eff06f840b45e9")
-			.withInstanceType(InstanceType.T2Micro)
-			.withMinCount(1)
-			.withMaxCount(1)
-			.withKeyName("CNV-MyKeyPair")
-			.withSecurityGroups("CNV-SSH-HTTP");
-		
-		/*
-        RunInstancesResult run_response = ec2.runInstances(run_request);
-        String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
-		System.out.println("Success: "+reservation_id);
-		*/
-	//lol
-		// STARTING INSTANCE
-		/*
-		StartInstancesRequest start_request = new StartInstancesRequest()
-    		.withInstanceIds("i-0afe583789a8a2ec2");
-
-		ec2.startInstances(start_request);
-		*/
-
-		// STOPPING INSTANCE
-		/*
-		StopInstancesRequest request = new StopInstancesRequest()
-    		.withInstanceIds("i-0afe583789a8a2ec2");
-
-		ec2.stopInstances(request);
-		*/
-
-		// DESCRIBING INSTANCE, conseguimos o IP por aqui
-		boolean done = false;
-		DescribeInstancesRequest describe_request = new DescribeInstancesRequest();
-		while(!done) {
-    		DescribeInstancesResult response = ec2.describeInstances(describe_request);
-
-    		for(Reservation reservation : response.getReservations()) {
-        		for(Instance instance : reservation.getInstances()) {
-            		System.out.printf(
-                		"Found instance with id %s, " +
-                		"AMI %s, " +
-                		"type %s, " +
-						"ip %s, " +
-                		"state %s " +
-                		"and monitoring state %s\n",
-                		instance.getInstanceId(),
-                		instance.getImageId(),
-                		instance.getInstanceType(),
-						instance.getPublicIpAddress(),
-                		instance.getState().getName(),
-                		instance.getMonitoring().getState());
-        		}
-    		}
-
-    		describe_request.setNextToken(response.getNextToken());
-
-    		if(response.getNextToken() == null) {
-        		done = true;
-    		}
-		}
-
-		//DESCRIBING ALARM, status gives OK or IN ALARM, usamos isso
-		final AmazonCloudWatch cw = AmazonCloudWatchClientBuilder.defaultClient();
-
-		done = false;
-		DescribeAlarmsRequest request = new DescribeAlarmsRequest();
-
-		while(!done) {
-    		DescribeAlarmsResult response = cw.describeAlarms(request);
-			for(MetricAlarm alarm : response.getMetricAlarms()) {
-				System.out.printf(
-						"Retrieved alarm %s, " +
-                		"Status %s\n",
-                		alarm.getAlarmName(),
-                		alarm.getStateValue());
-    		}
-
-    		request.setNextToken(response.getNextToken());
-
-    		if(response.getNextToken() == null) {
-        		done = true;
-    		}
-		}
+		System.out.println(getAverageInstructionCount());
     }
+	
+	private static int getAverageInstructionCount() throws IOException {
+		URL url = new URL("http://"+LBserverAddress+":"+LBserverPort+"/getAverageInstructionCount");
+		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+		int status = connection.getResponseCode();
+		System.out.println("Status: "+status);
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		
+		int result = Integer.parseInt(in.readLine());
+		in.close();
+
+		System.out.println("Finished reading: "+result);
+
+		connection.disconnect();
+		System.out.println("Connection closed.");
+
+		return result;
+	}
 }

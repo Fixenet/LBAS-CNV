@@ -1,4 +1,4 @@
-package MSS;
+package mss;
 
 import java.io.IOException;
 import java.io.OutputStream;
