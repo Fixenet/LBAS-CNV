@@ -11,6 +11,7 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Random;
 import java.util.HashMap;
 import java.util.concurrent.Executors;
 
@@ -27,35 +28,38 @@ import java.net.InetSocketAddress;
 public class LoadBalancer {
 	//MetricStorageSystem
 	private static final String MSSserverAddress = "127.0.0.1"; //localhost because they are running on the same machine
-	private static final int MSSserverPort = 8050;
+	private static final int MSSserverPort = 8001;
 
 	//LoadBalancer, this
-	private static final String serverAddress = "0.0.0.0"; //localhost because they are running on the same machine
-	private static final int serverPort = 8001;
+	private static final String LBServerAddress = "0.0.0.0"; //localhost because they are running on the same machine
+	private static final int LBServerPort = 8000;
 
-	//Maps total icount (per thread) to instance id
-	private static Map<String, Integer> ICountTotalMap = new HashMap<String, Integer>();
+	//Maps total blockCount (per thread) to instance id
+	private static Map<String, Integer> BlockCountTotalMap = new HashMap<String, Integer>();
 
-	//Maps list with each icount to instance id
-	private static Map<String, ArrayList<Integer>> ICountSeparateMap = new HashMap<String, ArrayList<Integer>>();
+	//Maps list with each blockCount to instance id
+	private static Map<String, ArrayList<Integer>> BlockCountSeparateMap = new HashMap<String, ArrayList<Integer>>();
 
     public static void main(final String[] args) throws IOException {
-        final HttpServer server = HttpServer.create(new InetSocketAddress(serverAddress, serverPort), 0);
+        final HttpServer server = HttpServer.create(new InetSocketAddress(LBServerAddress, LBServerPort), 0);
+
+		updateInstanceStates("8002", 0);
+		updateInstanceStates("8003", 0);
 
 		server.createContext("/scan", new LBToWebserverHandler());
-		server.createContext("/getAverageInstructionCount", new GetAverageInstructionCount());
+		server.createContext("/getAverageBlockCount", new GetAverageBlockCount());
 		server.setExecutor(Executors.newCachedThreadPool());
 		server.start();
     }
 
-	private static class GetAverageInstructionCount implements HttpHandler {
+	private static class GetAverageBlockCount implements HttpHandler {
 		@Override
 		public void handle(final HttpExchange exchange) throws IOException {
 			int result = 0;
-			for (int iCount : ICountTotalMap.values()) {
-				result += iCount;
+			for (int blockCount : BlockCountTotalMap.values()) {
+				result += blockCount;
 			}
-			result = result/ICountTotalMap.size();
+			result = result/BlockCountTotalMap.size();
 			String average = ""+result;
 			
 			byte[] response = average.getBytes();
@@ -73,17 +77,49 @@ public class LoadBalancer {
 			final String query = exchange.getRequestURI().getQuery();
 			System.out.println("> Query:\t" + query);
 
+			// Break it down into String[].
+			final String[] params = query.split("&");
+
+			final ArrayList<String> args = new ArrayList<>();
+			for (final String p : params) {
+				final String[] splitParam = p.split("=");
+				args.add(splitParam[1]);
+			}
+
+			String scan_type = args.get(8);
+		
+			int xMin = Integer.parseInt(args.get(2)); int xMax = Integer.parseInt(args.get(3));
+			int yMin = Integer.parseInt(args.get(4)); int yMax = Integer.parseInt(args.get(5));
+			int area = (xMax-xMin) * (yMax-yMin);
+
+			System.out.println(scan_type);
+			System.out.println("x:"+xMin+"-"+xMax+" y:"+yMin+"-"+yMax+" area:"+area);
+
 			//Then checks the MSS for an estimate for this query
-
-			//Then sees the status of each instance
-
+			int estimate = getEstimateMetric(scan_type, area);
+			
+			//Overfit an estimate for when we don't have values in the MSS
+			if (estimate == -1) estimate = 100 * area;
+			System.out.println("Estimate: "+estimate);
+	
 			//Then chooses the best instance to send
+			String chosenInstanceIP = chooseBestInstance();
+
+			//Then updates ICountTotal and ICountSeparate +estimate
+			updateInstanceStates(chosenInstanceIP, estimate);
+			getInstanceStates();
 
 			//Then sends the request it got to the chosen instance
-			String chosenInstanceIP = "127.0.0.1";
-			HttpURLConnection connection = sendRequestToWebServer(chosenInstanceIP, query);
+				//TODO this is port now for testing locally
+			//HttpURLConnection connection = sendRequestToWebServer(chosenInstanceIP, query);
+			HttpURLConnection connection = sendRequestToWebServerLocal(Integer.parseInt(chosenInstanceIP), query);
 
-			//Then waits for the request to come back from the instance
+			//Then waits for the request to come back from the instance, fault tolerance here
+
+			//Then updates the ICountTotal and ICountSeparate -estimate
+			//updateInstanceStates(chosenInstanceIP, estimate);
+			updateInstanceStates(chosenInstanceIP, -estimate);
+			getInstanceStates();
 
 			//Then returns the results back to the user
 			final Headers hdrs = exchange.getResponseHeaders();
@@ -108,56 +144,64 @@ public class LoadBalancer {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-
-			System.out.println("Finished reading.");
+			System.out.println("WebServer - Finished reading.");
 
 			os.close();
 			in.close();
 			connection.disconnect();
-
-			System.out.println("Connection and Streams closed.");
+			System.out.println("WebServer - Connection and Streams closed.");
 			
             System.out.println("> Sent response to " + exchange.getRemoteAddress().toString());
 		}
 	}
 
-	private static void updateInstanceStates(String instanceID, int iCount) {
-		if (ICountSeparateMap.get(instanceID) == null) { //Initialize the lists
-			ICountTotalMap.put(instanceID, 0);
-			ICountSeparateMap.put(instanceID, new ArrayList<Integer>());
+	private static void updateInstanceStates(String instanceIP, int blockCount) {
+		if (BlockCountSeparateMap.get(instanceIP) == null) { //Initialize the lists
+			BlockCountTotalMap.put(instanceIP, 0);
+			BlockCountSeparateMap.put(instanceIP, new ArrayList<Integer>());
 		}
 
 		boolean contains = true;
-		if (iCount > 0) { //Add iCount to list, we are adding a job to the instance	
-			ICountSeparateMap.get(instanceID).add(iCount);
-		} else { //Remove iCount from list, the instance has finished the job
-			contains = ICountSeparateMap.get(instanceID).remove(Integer.valueOf(-iCount));
+		if (blockCount > 0) { //Add blockCount to list, we are adding a job to the instance	
+			BlockCountSeparateMap.get(instanceIP).add(blockCount);
+		} else if (blockCount < 0) { //Remove blockCount from list, the instance has finished the job
+			contains = BlockCountSeparateMap.get(instanceIP).remove(Integer.valueOf(-blockCount));
 		}
 		//If we try to remove a value that doesnt exist, we don't update the total
-		if (contains) ICountTotalMap.put(instanceID, ICountTotalMap.get(instanceID) + iCount);
+		if (contains) BlockCountTotalMap.put(instanceIP, BlockCountTotalMap.get(instanceIP) + blockCount);
 	}
 
 	private static void getInstanceStates() {
-		System.out.println("---------------");
-		for (String instanceID : ICountTotalMap.keySet()) {
-			System.out.println(instanceID+" has "+ICountTotalMap.get(instanceID));
-			for (int separateICount : ICountSeparateMap.get(instanceID)) {
+		System.out.println("------------Instance States------------");
+		for (String instanceIP : BlockCountTotalMap.keySet()) {
+			System.out.println(instanceIP+" has "+BlockCountTotalMap.get(instanceIP)+" estimate blockCount total.");
+			for (int separateICount : BlockCountSeparateMap.get(instanceIP)) {
 				System.out.println("   -perThread has "+separateICount);
 			}
 		}
 	}
 
 	private static String chooseBestInstance() {
-		return "BestID";
+		//TODO update this to maybe take into account if the instance has a big job vs many small ones
+		
+		String bestInstanceIP = null;
+		int minBlockCount = -1;
+		for (String instanceIP : BlockCountTotalMap.keySet()) {
+			int blockCount = BlockCountTotalMap.get(instanceIP);
+			if (blockCount < minBlockCount || minBlockCount == -1) {
+				bestInstanceIP = instanceIP;
+				minBlockCount = blockCount;
+			}
+		}
+		return bestInstanceIP;
 	}
 
 	private static int getEstimateMetric(String scan_type, int area) throws IOException {
-
-		URL url = new URL("http://"+serverAddress+":"+serverPort+"/getEstimateMetric?st="+scan_type+"&area="+area);
+		URL url = new URL("http://"+MSSserverAddress+":"+MSSserverPort+"/getEstimateMetric?scanType="+scan_type+"&area="+area);
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
 		int status = connection.getResponseCode();
-		System.out.println("Status: "+status);
+		System.out.println("MSS - Status: "+status);
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 		
@@ -165,22 +209,34 @@ public class LoadBalancer {
 		int result = Integer.parseInt(in.readLine()); //2nd line is actual result
 		in.close();
 
-		System.out.println("Finished reading: "+response);
+		System.out.println("MSS - Finished reading: "+response);
 
 		connection.disconnect();
-		System.out.println("Connection closed.");
+		System.out.println("MSS - Connection closed.");
 
 		return result;
 	}
 
 	private static HttpURLConnection sendRequestToWebServer(String instanceIP, String query) throws IOException{
-		int serverPort = 8000;
+		int serverPort = 8002;
 
 		URL url = new URL("http://"+instanceIP+":"+serverPort+"/scan?"+query);
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
 		int status = connection.getResponseCode();
-		System.out.println("Status: "+status);
+		System.out.println("WebServer - Status: "+status);
+
+		return connection;
+	}
+
+	private static HttpURLConnection sendRequestToWebServerLocal(int instancePort, String query) throws IOException{
+		String serverIP = "127.0.0.1";
+
+		URL url = new URL("http://"+serverIP+":"+instancePort+"/scan?"+query);
+		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+		int status = connection.getResponseCode();
+		System.out.println("WebServer - Status: "+status);
 
 		return connection;
 	}

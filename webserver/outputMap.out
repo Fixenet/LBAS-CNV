@@ -370,3 +370,104 @@ Thread 22:
 Blocks: 88790
 Request: GREEDY_RANGE_SCAN
 Square: (142,192) to (398,448)
+Thread 12:
+Blocks: 88946
+Request: GREEDY_RANGE_SCAN
+Square: (72,118) to (328,374)
+Thread 12:
+Blocks: 110330
+Request: PROGRESSIVE_SCAN
+Square: (91,118) to (347,374)
+Thread 12:
+Blocks: 110330
+Request: PROGRESSIVE_SCAN
+Square: (144,118) to (400,374)
+Thread 15:
+Blocks: 87872
+Request: GREEDY_RANGE_SCAN
+Square: (183,52) to (439,308)
+Thread 12:
+Blocks: 50641
+Scan: GREEDY_RANGE_SCAN
+Square: (218,240) to (324,338)
+Area: 10388
+Thread 15:
+Blocks: 51035
+Scan: GREEDY_RANGE_SCAN
+Square: (218,240) to (284,298)
+Area: 3828
+Thread 16:
+Blocks: 79567
+Scan: GREEDY_RANGE_SCAN
+Square: (183,180) to (285,290)
+Area: 11220
+Thread 12:
+Blocks: 89325
+Scan: GREEDY_RANGE_SCAN
+Square: (194,179) to (317,311)
+Area: 16236
+Thread 12:
+Blocks: 89273
+Scan: GREEDY_RANGE_SCAN
+Square: (197,185) to (317,311)
+Area: 15120
+Thread 14:
+Blocks: 102125
+Scan: PROGRESSIVE_SCAN
+Square: (128,235) to (402,374)
+Area: 38086
+Thread 12:
+Blocks: 678170973
+Scan: GRID_SCAN
+Square: (830,741) to (1467,1556)
+Area: 519155
+Thread 18:
+Blocks: 110330
+Scan: PROGRESSIVE_SCAN
+Square: (58,181) to (332,320)
+Area: 38086
+Thread 12:
+Blocks: 709577383
+Scan: GRID_SCAN
+Square: (882,700) to (1519,1515)
+Area: 519155
+Thread 22:
+Blocks: 69299
+Scan: GREEDY_RANGE_SCAN
+Square: (130,144) to (404,283)
+Area: 38086
+Thread 22:
+Blocks: 68136
+Scan: GREEDY_RANGE_SCAN
+Square: (45,203) to (319,342)
+Area: 38086
+Thread 21:
+Blocks: 708018506
+Scan: GRID_SCAN
+Square: (882,700) to (1519,1515)
+Area: 519155
+Thread 26:
+Blocks: 110330
+Scan: PROGRESSIVE_SCAN
+Square: (137,187) to (411,326)
+Area: 38086
+Thread 26:
+Blocks: 103377
+Scan: PROGRESSIVE_SCAN
+Square: (95,222) to (369,361)
+Area: 38086
+Thread 25:
+Blocks: 703568587
+Scan: GRID_SCAN
+Square: (882,700) to (1519,1515)
+Area: 519155
+Thread 12:
+Blocks: 62562
+Scan: GREEDY_RANGE_SCAN
+Square: (95,222) to (369,361)
+Area: 38086
+Thread 30:
+Blocks: 565149973
+Scan: GRID_SCAN
+Square: (761,682) to (1398,1497)
+Area: 519155

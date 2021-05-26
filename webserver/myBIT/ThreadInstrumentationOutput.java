@@ -16,8 +16,17 @@ public class ThreadInstrumentationOutput {
         this.threadID = tID;
         this.blockCount = 0;
     }
+
+    public int getArea() {
+        return (this.requestXmax-this.requestXmin) * (this.requestYmax-this.requestYmin);
+    }
     
-    public synchronized String toString() {
-        return "Thread "+this.threadID+":\nBlocks: "+this.blockCount+"\nRequest: "+this.requestScan+"\nSquare: ("+this.requestXmin+","+this.requestYmin+") to ("+this.requestXmax+","+this.requestYmax+")";
+    public String toString() {
+        return "Thread "+this.threadID
+                +":\nBlocks: "+this.blockCount
+                +"\nScan: "+this.requestScan
+                +"\nSquare: ("+this.requestXmin+","+this.requestYmin+") to ("
+                                +this.requestXmax+","+this.requestYmax+")"
+                +"\nArea: "+this.getArea();
     }
 }

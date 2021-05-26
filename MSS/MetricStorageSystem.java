@@ -47,28 +47,20 @@ public class MetricStorageSystem {
 
 	private static final ProvisionedThroughput THRUPUT = new ProvisionedThroughput(1L, 2L);
 
-    public static void main(final String[] args) throws IOException {
-        final String serverAddress = "127.0.0.1"; //localhost for now
-        final int serverPort = 8001;
+	//MetricStorageSystem
+	private static final String MSSserverAddress = "127.0.0.1"; //localhost because they are running on the same machine
+    private static final int MSSserverPort = 8001;
 
-        final HttpServer server = HttpServer.create(new InetSocketAddress(serverAddress, serverPort), 0);
+    public static void main(final String[] args) throws IOException {
+        final HttpServer server = HttpServer.create(new InetSocketAddress(MSSserverAddress, MSSserverPort), 0);
 
         server.createContext("/storeMetric", new StoreMetricHandler());
 		server.createContext("/getEstimateMetric", new GetEstimateHandler());
         server.setExecutor(Executors.newCachedThreadPool());
 		server.start();
-		
-		String scan_type = "GRID";
-		
-		int xMin = 5; int xMax = 10;
-		int yMin = 5; int yMax = 10;
-		int area = (xMax-xMin) * (yMax-yMin);
-
-		int iCount = 10000;
 
 		try {
 			createTable();
-			putItemInTable(scan_type, area, iCount);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -103,14 +95,14 @@ public class MetricStorageSystem {
         System.out.println("Table is ready for use! " + desc);
 	}
 
-	private static void putItemInTable(String scan_type, int scan_area, int instruction_count) throws InterruptedException {
+	private static void putItemInTable(String scan_type, int scan_area, int block_count) throws InterruptedException {
 		table.waitForActive();
 		table.putItem(new Item().withString(HASH_KEY, scan_type)
 			.withInt(RANGE_KEY, scan_area)
-			.withInt(VALUE, instruction_count));
+			.withInt(VALUE, block_count));
 	}
 
-	private static int getItemFromTable(String scan_type, int scan_area) throws InterruptedException {
+	private static int getEstimateItemFromTable(String scan_type, int scan_area) throws InterruptedException {
 		table.waitForActive();
         ItemCollection<?> col = table.query(HASH_KEY, scan_type, 
             new RangeKeyCondition(RANGE_KEY).ge(scan_area)); 
@@ -150,7 +142,8 @@ public class MetricStorageSystem {
 			hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
 			hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 			
-			String estimate = "MSS Stored Metric: Scan="+args.get(0)+",Area="+args.get(1)+",ICount="+args.get(2)+"\n";
+			String estimate = "MSS Stored Metric: Scan="+args.get(0)+",Area="+args.get(1)+",BlockCount="+args.get(2)+"\n";
+			System.out.println(estimate);
 			byte[] response = estimate.getBytes();
         	t.sendResponseHeaders(200, response.length);
         	OutputStream os = t.getResponseBody();
@@ -181,7 +174,7 @@ public class MetricStorageSystem {
 
 			int result = -1;
 			try {
-				result = getItemFromTable(args.get(0), Integer.parseInt(args.get(1)));
+				result = getEstimateItemFromTable(args.get(0), Integer.parseInt(args.get(1)));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -194,8 +187,9 @@ public class MetricStorageSystem {
 			hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
 			hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 			
-			String icount = "MSS Estimate: Scan="+args.get(0)+",Area="+args.get(1)+" => "+result+"\n"+result;
-			byte[] response = icount.getBytes();
+			String bcount = "MSS Estimate: Scan="+args.get(0)+",Area="+args.get(1)+" => "+result+"\n"+result;
+			System.out.println(bcount);
+			byte[] response = bcount.getBytes();
         	t.sendResponseHeaders(200, response.length);
         	OutputStream os = t.getResponseBody();
         	os.write(response);

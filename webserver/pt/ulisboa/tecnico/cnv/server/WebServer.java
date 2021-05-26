@@ -25,16 +25,24 @@ import java.util.HashMap;
 import java.io.FileWriter;
 import myBIT.ThreadInstrumentationOutput;
 
+import java.net.URL;
+import java.net.HttpURLConnection;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
 import javax.imageio.ImageIO;
 
 public class WebServer {
+	//MetricStorageSystem
+	private static final String MSSserverAddress = "127.0.0.1"; //localhost because they are running on the same machine
+	private static final int MSSserverPort = 8001;
 
 	static ServerArgumentParser sap = null;
 
 	private static HashMap<Integer, ThreadInstrumentationOutput> outputMap = new HashMap<>();
 
 	public static void main(final String[] args) throws Exception {
-
 		try {
 			// Get user-provided flags.
 			WebServer.sap = new ServerArgumentParser(args);
@@ -43,15 +51,12 @@ public class WebServer {
 			System.out.println(e);
 			return;
 		}
-
 		System.out.println("> Finished parsing Server args.");
 
 		//final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
-
 		final HttpServer server = HttpServer.create(new InetSocketAddress(WebServer.sap.getServerAddress(), WebServer.sap.getServerPort()), 0);
 
 		server.createContext("/scan", new MyHandler());
-
 		// be aware! infinite pool of threads!
 		server.setExecutor(Executors.newCachedThreadPool());
 		server.start();
@@ -67,7 +72,8 @@ public class WebServer {
 	public static synchronized void end(int trash) {
 		int tID = (int) Thread.currentThread().getId();
 		System.out.println(outputMap.get(tID).toString());
-		writeToFile(tID);
+		//writeToFile(tID);
+		writeToServer(tID);
 	}
 	
 	public static synchronized void writeToFile(int tID) {
@@ -76,13 +82,37 @@ public class WebServer {
 		  	myWriter.write(outputMap.get(tID).toString()+"\n");
 		  	myWriter.close();
 		} catch (IOException e) {
-		 	System.out.println("An error occurred.");
+		 	System.out.println("An error occurred writing to File.");
 		  	e.printStackTrace();
 		}
 	}
 
-	public static synchronized void writeToServer() {
-		//Use this as abstract socket
+	public static void writeToServer(int tID) {
+		ThreadInstrumentationOutput output = outputMap.get(tID);
+		try {
+		  	storeMetric(output.requestScan, output.getArea(), output.blockCount);
+		} catch (IOException e) {
+		 	System.out.println("An error occurred writing to MSS.");
+		  	e.printStackTrace();
+		}
+	}
+
+	private static void storeMetric(String scan_type, int area, int bcount) throws IOException {
+		URL url = new URL("http://"+MSSserverAddress+":"+MSSserverPort+"/storeMetric?scanType="+scan_type+"&area="+area+"&bcount="+bcount);
+		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+		int status = connection.getResponseCode();
+		System.out.println("Status: "+status);
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		
+		String response = in.readLine(); //1st line is descriptive
+		in.close();
+
+		System.out.println("Finished writing: "+response);
+
+		connection.disconnect();
+		System.out.println("Connection closed.");
 	}
 
 	static class MyHandler implements HttpHandler {

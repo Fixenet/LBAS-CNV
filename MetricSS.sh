@@ -1,0 +1,2 @@
+javac mss/MetricStorageSystem.java
+java mss.MetricStorageSystem
