@@ -35,6 +35,7 @@ import javax.imageio.ImageIO;
 
 public class WebServer {
 	//MetricStorageSystem
+	//TODO get the IP from the LoabBalancer/AutoScaler/MSS machine and add it here
 	private static final String MSSserverAddress = "127.0.0.1"; //localhost because they are running on the same machine
 	private static final int MSSserverPort = 8001;
 

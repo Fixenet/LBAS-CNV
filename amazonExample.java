@@ -36,11 +36,11 @@ public class amazonExample {
 			.withKeyName("CNV-MyKeyPair")
 			.withSecurityGroups("CNV-SSH-HTTP");
 		
-		/*
+		
         RunInstancesResult run_response = ec2.runInstances(run_request);
         String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
 		System.out.println("Success: "+reservation_id);
-		*/
+		
 	//lol
 		// STARTING INSTANCE
 		/*
