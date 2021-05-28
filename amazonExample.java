@@ -35,9 +35,17 @@ public class amazonExample {
 			.withMaxCount(1)
 			.withKeyName("CNV-MyKeyPair")
 			.withSecurityGroups("CNV-SSH-HTTP");
+
+		RunInstancesRequest run_request_Webserver = new RunInstancesRequest()
+			.withImageId("ami-0484712cbcae24026")
+			.withInstanceType(InstanceType.T2Micro)
+			.withMinCount(1)
+			.withMaxCount(1)
+			.withKeyName("CNV-MyKeyPair")
+			.withSecurityGroups("CNV-SSH-HTTP");
 		
 		
-        RunInstancesResult run_response = ec2.runInstances(run_request);
+        RunInstancesResult run_response = ec2.runInstances(run_request_Webserver);
         String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
 		System.out.println("Success: "+reservation_id);
 		
@@ -71,7 +79,7 @@ public class amazonExample {
                 		"AMI %s, " +
                 		"type %s, " +
 						"ip %s, " +
-                		"state %s ",
+                		"state %s\n",
                 		instance.getInstanceId(),
                 		instance.getImageId(),
                 		instance.getInstanceType(),

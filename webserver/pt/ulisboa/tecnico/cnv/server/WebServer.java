@@ -34,13 +34,7 @@ import java.io.InputStreamReader;
 import javax.imageio.ImageIO;
 
 public class WebServer {
-	//MetricStorageSystem
-	//TODO get the IP from the LoabBalancer/AutoScaler/MSS machine and add it here
-	private static final String MSSserverAddress = "127.0.0.1"; //localhost because they are running on the same machine
-	private static final int MSSserverPort = 8001;
-
 	static ServerArgumentParser sap = null;
-
 	private static HashMap<Integer, ThreadInstrumentationOutput> outputMap = new HashMap<>();
 
 	public static void main(final String[] args) throws Exception {
@@ -54,7 +48,6 @@ public class WebServer {
 		}
 		System.out.println("> Finished parsing Server args.");
 
-		//final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 8000), 0);
 		final HttpServer server = HttpServer.create(new InetSocketAddress(WebServer.sap.getServerAddress(), WebServer.sap.getServerPort()), 0);
 
 		server.createContext("/scan", new MyHandler());
@@ -74,7 +67,6 @@ public class WebServer {
 		int tID = (int) Thread.currentThread().getId();
 		System.out.println(outputMap.get(tID).toString());
 		//writeToFile(tID);
-		writeToServer(tID);
 	}
 	
 	public static synchronized void writeToFile(int tID) {
@@ -86,34 +78,6 @@ public class WebServer {
 		 	System.out.println("An error occurred writing to File.");
 		  	e.printStackTrace();
 		}
-	}
-
-	public static void writeToServer(int tID) {
-		ThreadInstrumentationOutput output = outputMap.get(tID);
-		try {
-		  	storeMetric(output.requestScan, output.getArea(), output.blockCount);
-		} catch (IOException e) {
-		 	System.out.println("An error occurred writing to MSS.");
-		  	e.printStackTrace();
-		}
-	}
-
-	private static void storeMetric(String scan_type, int area, int bcount) throws IOException {
-		URL url = new URL("http://"+MSSserverAddress+":"+MSSserverPort+"/storeMetric?scanType="+scan_type+"&area="+area+"&bcount="+bcount);
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-		int status = connection.getResponseCode();
-		System.out.println("Status: "+status);
-
-		BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-		
-		String response = in.readLine(); //1st line is descriptive
-		in.close();
-
-		System.out.println("Finished writing: "+response);
-
-		connection.disconnect();
-		System.out.println("Connection closed.");
 	}
 
 	static class MyHandler implements HttpHandler {
@@ -131,12 +95,6 @@ public class WebServer {
 			// Break it down into String[].
 			final String[] params = query.split("&");
 
-			/*
-			for(String p: params) {
-				System.out.println(p);
-			}
-			*/
-
 			// Store as if it was a direct call to SolverMain.
 			final ArrayList<String> newArgs = new ArrayList<>();
 			for (final String p : params) {
@@ -148,17 +106,11 @@ public class WebServer {
 
 				newArgs.add("-" + splitParam[0]);
 				newArgs.add(splitParam[1]);
-
-				/*
-				System.out.println("splitParam[0]: " + splitParam[0]);
-				System.out.println("splitParam[1]: " + splitParam[1]);
-				*/
 			}
 
 			if(sap.isDebugging()) {
 				newArgs.add("-d");
 			}
-
 
 			// Store from ArrayList into regular String[].
 			final String[] args = new String[newArgs.size()];
@@ -175,7 +127,6 @@ public class WebServer {
 			outputMap.get(tID).requestYmax = Integer.parseInt(args[11]);
 			outputMap.get(tID).requestScan = args[17];
 
-
 			// Create solver instance from factory.
 			final Solver s = SolverFactory.getInstance().makeSolver(args);
 
@@ -187,17 +138,15 @@ public class WebServer {
 			// Write figure file to disk.
 			File responseFile = null;
 			try {
-
 				final BufferedImage outputImg = s.solveImage();
 
 				final String outPath = WebServer.sap.getOutputDirectory();
 
 				final String imageName = s.toString();
 
-				/*
-				if(ap.isDebugging()) {
+				if(sap.isDebugging()) {
 					System.out.println("> Image name: " + imageName);
-				} */
+				} 
 
 				final Path imagePathPNG = Paths.get(outPath, imageName);
 				ImageIO.write(outputImg, "png", imagePathPNG.toFile());
@@ -222,17 +171,16 @@ public class WebServer {
 			hdrs.add("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS");
 			hdrs.add("Access-Control-Allow-Headers", "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 
+			int block_count = outputMap.get(tID).blockCount;
+			hdrs.add("Block-Count", ""+block_count);
+
 			t.sendResponseHeaders(200, responseFile.length());
 			
 			final OutputStream os = t.getResponseBody();
 			Files.copy(responseFile.toPath(), os);
-
 			os.close();
 
 			System.out.println("> Sent response to " + t.getRemoteAddress().toString());
 		}
 	}
-
-
-
 }
