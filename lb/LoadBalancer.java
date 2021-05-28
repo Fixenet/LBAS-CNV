@@ -38,7 +38,7 @@ public class LoadBalancer {
     public static void main(final String[] args) throws IOException {
         final HttpServer server = HttpServer.create(new InetSocketAddress(LBServerAddress, LBServerPort), 0);
 
-		updateInstanceStates("34.229.67.201", 0);
+		updateInstanceStates("54.226.205.197", 0);
 
 		server.createContext("/scan", new LBToWebserverHandler());
 		server.createContext("/getAverageBlockCount", new GetAverageBlockCount());
