@@ -6,9 +6,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.Executors;
 
 import com.sun.net.httpserver.Headers;
@@ -29,6 +31,9 @@ public class LoadBalancer {
 	private static final String LBServerAddress = "0.0.0.0"; //localhost because they are running on the same machine
 	private static final int LBServerPort = 8000;
 
+	//List with instances that are to be used for next requests
+	private static Set<String> ActiveInstanceList = new HashSet<String>();
+
 	//Maps total blockCount (per thread) to instance id
 	private static Map<String, Integer> BlockCountTotalMap = new HashMap<String, Integer>();
 
@@ -38,10 +43,9 @@ public class LoadBalancer {
     public static void main(final String[] args) throws IOException {
         final HttpServer server = HttpServer.create(new InetSocketAddress(LBServerAddress, LBServerPort), 0);
 
-		updateInstanceStates("54.226.205.197", 0);
-
 		server.createContext("/scan", new LBToWebserverHandler());
 		server.createContext("/getAverageBlockCount", new GetAverageBlockCount());
+		server.createContext("/manageActiveInstances", new ManageActiveInstances());
 		server.setExecutor(Executors.newCachedThreadPool());
 		server.start();
     }
@@ -57,6 +61,43 @@ public class LoadBalancer {
 			String average = ""+result;
 			
 			byte[] response = average.getBytes();
+        	exchange.sendResponseHeaders(200, response.length);
+        	OutputStream os = exchange.getResponseBody();
+        	os.write(response);
+        	os.close();
+		}
+	}
+
+	private static class ManageActiveInstances implements HttpHandler {
+		@Override
+		public void handle(final HttpExchange exchange) throws IOException {
+			final String query = exchange.getRequestURI().getQuery();
+			System.out.println("> Query:\t" + query);
+
+			// Break it down into String[].
+			final String[] params = query.split("&");
+
+			final ArrayList<String> args = new ArrayList<>();
+			for (final String p : params) {
+				final String[] splitParam = p.split("=");
+				args.add(splitParam[1]);
+			}
+
+			String instanceIP = args.get(0);
+			String mode = args.get(1);
+			
+			String result = "LB - ";
+			if (mode.equals("add")) {
+				addInstance(instanceIP);
+				result += "Added instance: ";
+			} else if (mode.equals("remove")) {
+				removeInstance(instanceIP);
+				result += "Removed instance: ";
+			}
+			result += instanceIP;
+			System.out.println(result);
+			
+			byte[] response = result.getBytes();
         	exchange.sendResponseHeaders(200, response.length);
         	OutputStream os = exchange.getResponseBody();
         	os.write(response);
@@ -97,6 +138,10 @@ public class LoadBalancer {
 	
 			//Then chooses the best instance to send
 			String chosenInstanceIP = chooseBestInstance();
+			if (chosenInstanceIP == null) {
+				System.out.println("LB - Couldn't find any instance to send request to.");
+				return;
+			}
 
 			//Then updates ICountTotal and ICountSeparate +estimate
 			updateInstanceStates(chosenInstanceIP, estimate);
@@ -150,6 +195,15 @@ public class LoadBalancer {
 		}
 	}
 
+	private static void addInstance(String instanceIP) {
+		ActiveInstanceList.add(instanceIP);
+		updateInstanceStates(instanceIP, 0);
+	}
+	
+	private static void removeInstance(String instanceIP) {
+		ActiveInstanceList.remove(instanceIP);
+	}
+
 	private static void updateInstanceStates(String instanceIP, int blockCount) {
 		if (BlockCountSeparateMap.get(instanceIP) == null) { //Initialize the lists
 			BlockCountTotalMap.put(instanceIP, 0);
@@ -169,7 +223,14 @@ public class LoadBalancer {
 	private static void getInstanceStates() {
 		System.out.println("---------------Instance States---------------");
 		for (String instanceIP : BlockCountTotalMap.keySet()) {
-			System.out.println("LB - "+instanceIP+" has "+BlockCountTotalMap.get(instanceIP)+" estimate blockCount total.");
+			String instanceInfo = instanceIP+" is ";
+			if (ActiveInstanceList.contains(instanceIP)) {
+				instanceInfo += "ACTIVE and";
+			} else {
+				instanceInfo += "INACTIVE and";
+			}
+			instanceInfo += " has "+BlockCountTotalMap.get(instanceIP)+" estimate blockCount total.";
+			System.out.println("LB - "+instanceInfo);
 			for (int separateICount : BlockCountSeparateMap.get(instanceIP)) {
 				System.out.println("   -perThread has "+separateICount);
 			}
@@ -181,7 +242,7 @@ public class LoadBalancer {
 		
 		String bestInstanceIP = null;
 		int minBlockCount = -1;
-		for (String instanceIP : BlockCountTotalMap.keySet()) {
+		for (String instanceIP : ActiveInstanceList) {
 			int blockCount = BlockCountTotalMap.get(instanceIP);
 			if (blockCount < minBlockCount || minBlockCount == -1) {
 				bestInstanceIP = instanceIP;
