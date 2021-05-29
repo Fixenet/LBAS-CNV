@@ -51,6 +51,7 @@ public class WebServer {
 		final HttpServer server = HttpServer.create(new InetSocketAddress(WebServer.sap.getServerAddress(), WebServer.sap.getServerPort()), 0);
 
 		server.createContext("/scan", new MyHandler());
+		server.createContext("/healthCheck", new HealthCheckHandler());
 		// be aware! infinite pool of threads!
 		server.setExecutor(Executors.newCachedThreadPool());
 		server.start();
@@ -77,6 +78,18 @@ public class WebServer {
 		} catch (IOException e) {
 		 	System.out.println("An error occurred writing to File.");
 		  	e.printStackTrace();
+		}
+	}
+
+	static class HealthCheckHandler implements HttpHandler {
+		@Override
+		public void handle(final HttpExchange t) throws IOException {
+			String health = "This webserver is alive.";
+			byte[] response = health.getBytes();
+        	t.sendResponseHeaders(200, response.length);
+        	OutputStream os = t.getResponseBody();
+        	os.write(response);
+        	os.close();
 		}
 	}
 

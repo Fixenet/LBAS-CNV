@@ -138,6 +138,8 @@ public class LoadBalancer {
 	
 			//Then chooses the best instance to send
 			String chosenInstanceIP = chooseBestInstance();
+			while (!healthCheck(chosenInstanceIP)) chosenInstanceIP = chooseBestInstance();
+
 			if (chosenInstanceIP == null) {
 				System.out.println("LB - Couldn't find any instance to send request to.");
 				return;
@@ -196,11 +198,13 @@ public class LoadBalancer {
 	}
 
 	private static void addInstance(String instanceIP) {
+		System.out.println("Added "+instanceIP);
 		ActiveInstanceList.add(instanceIP);
 		updateInstanceStates(instanceIP, 0);
 	}
 	
 	private static void removeInstance(String instanceIP) {
+		System.out.println("Removed "+instanceIP);
 		ActiveInstanceList.remove(instanceIP);
 	}
 
@@ -250,6 +254,32 @@ public class LoadBalancer {
 			}
 		}
 		return bestInstanceIP;
+	}
+
+	private static boolean healthCheck(String instanceIP) {
+		if (instanceIP == null) return true;
+		try {
+			int serverPort = 8000;
+			URL url = new URL("http://"+instanceIP+":"+serverPort+"/healthCheck");
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	
+			int status = connection.getResponseCode();
+			System.out.println("WebServer - Status: "+status);
+	
+			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			
+			String response = in.readLine(); //1st line is descriptive
+			in.close();
+	
+			System.out.println("WebServer - Finished writing: "+response);
+	
+			connection.disconnect();
+			System.out.println("WebServer - Connection closed.");
+		} catch (IOException e) {
+			removeInstance(instanceIP);
+			return false;
+		}
+		return true;
 	}
 
 	private static int getEstimateMetric(String scan_type, int area) throws IOException {
