@@ -52,32 +52,19 @@ import com.amazonaws.services.cloudwatch.model.Dimension;
 import com.amazonaws.services.cloudwatch.model.Datapoint;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
+import java.util.Map;
+import java.util.HashMap;
 
 
 import java.io.IOException;
 
 public class amazonExample {
-	private static int getActiveMachines(AmazonEC2 ec2){
-		int i=0;
-		boolean done = false;
-		DescribeInstancesRequest describe_request = new DescribeInstancesRequest();
-		while(!done) {
-    		DescribeInstancesResult response = ec2.describeInstances(describe_request);
+	private static Map<String, String> InstanceID_IP = new HashMap<String, String>();
 
-    		for(Reservation reservation : response.getReservations()) {
-        		for(Instance instance : reservation.getInstances()) {
-            		if(instance.getState().getName().equals("running") || instance.getState().getName().equals("pending"))
-                		i++;
-        		}
-    		}
 
-    		describe_request.setNextToken(response.getNextToken());
 
-    		if(response.getNextToken() == null) {
-        		done = true;
-    		}
-		}
-		return i;
+	private static int getActiveMachines(){
+		return InstanceID_IP.size();
 	}
 	private static void deleteAlarm(AmazonCloudWatch cw,String alarm_name){
 		DeleteAlarmsRequest request = new DeleteAlarmsRequest()
@@ -98,11 +85,13 @@ public class amazonExample {
 		
         RunInstancesResult run_response = ec2.runInstances(run_request);
         String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
+		String reservation_ip = run_response.getReservation().getInstances().get(0).getPublicIpAddress();
 		System.out.println("Success: "+reservation_id);
 		String alarmname=reservation_id+"/CPU-GREATER";
 		String alarmname2=reservation_id+"/CPU-LOWER";
 		putMetricAlarmCPUGreater(cw,alarmname,reservation_id);
 		putMetricAlarmCPULower(cw,alarmname2,reservation_id);
+		InstanceID_IP.put(reservation_id,reservation_ip);
 	}
 	private static void terminateMachine(AmazonEC2 ec2,String InstanceId){
 		final AmazonCloudWatch cw = AmazonCloudWatchClientBuilder.defaultClient();
@@ -112,6 +101,7 @@ public class amazonExample {
             ec2.terminateInstances(termInstanceReq);
 			deleteAlarm(cw,InstanceId+"/CPU-GREATER");
 			deleteAlarm(cw,InstanceId+"/CPU-LOWER");
+			InstanceID_IP.remove(InstanceId);
 	}
 
 	public static void putMetricAlarmCPUGreater(AmazonCloudWatch cw, String alarmName, String instanceId) {
@@ -241,9 +231,12 @@ public class amazonExample {
 
 		//DESCRIBING ALARM, status gives OK or IN ALARM, usamos isso
 		final AmazonCloudWatch cw = AmazonCloudWatchClientBuilder.defaultClient();
+		int size;
+		int counter;
 	while(true){
+		counter=0;
 		try{
-		Thread.sleep(5000);
+		Thread.sleep(60*1000);
 		}catch(InterruptedException e){
 
 		}
@@ -258,8 +251,21 @@ public class amazonExample {
                 		"Status %s\n",
                 		alarm.getAlarmName(),
                 		alarm.getStateValue());
+						if(alarm.getStateValue().equals("ALARM")){
+							String[] alarmSplit=alarm.getAlarmName().split("/");
+							if(alarmSplit[1].equals("CPU-LOWER")){
+								if(getActiveMachines()>1){
+									terminateMachine(ec2,alarmSplit[0]);
+								}
+							}
+							if(alarmSplit[1].equals("CPU-GREATER")){
+								counter++;
+							}
+						}
     		}
-
+			if(counter==getActiveMachines()){
+				createMachine(ec2);
+			}
     		request.setNextToken(response.getNextToken());
 
     		if(response.getNextToken() == null) {
