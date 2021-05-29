@@ -94,7 +94,6 @@ public class ServerArgumentParser {
             this.argValues.put(ServerParameters.ADDRESS.toString(), "127.0.0.1");
         }
 
-
         if(this.cmd.hasOption(ServerParameters.PORT.toString())) {
             final String port = this.cmd.getOptionValue(ServerParameters.PORT.toString());
             this.argValues.put(ServerParameters.PORT.toString(), new Integer(port));

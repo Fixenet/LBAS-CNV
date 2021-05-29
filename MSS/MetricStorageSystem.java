@@ -13,7 +13,6 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 
@@ -43,12 +42,12 @@ public class MetricStorageSystem {
 	private static String HASH_KEY = "ScanType";
 	private static String RANGE_KEY = "RequestArea";
 	// value
-	private static String VALUE = "ICount";
+	private static String VALUE = "BlockCount";
 
 	private static final ProvisionedThroughput THRUPUT = new ProvisionedThroughput(1L, 2L);
 
 	//MetricStorageSystem
-	private static final String MSSserverAddress = "127.0.0.1"; //localhost because they are running on the same machine
+	private static final String MSSserverAddress = "0.0.0.0"; //localhost because they are running on the same machine
     private static final int MSSserverPort = 8001;
 
     public static void main(final String[] args) throws IOException {
