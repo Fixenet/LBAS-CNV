@@ -102,6 +102,7 @@ public class AutoScaler {
 
 	private static void checkAlarms() throws IOException {
 		int counter = 0;
+		int counter1 = 0;
 	
 		boolean done = false;
 		DescribeAlarmsRequest request = new DescribeAlarmsRequest();
@@ -116,7 +117,7 @@ public class AutoScaler {
 					alarm.getStateValue());
 				if(alarm.getStateValue().equals("ALARM")){
 					String[] alarmSplit=alarm.getAlarmName().split("/");
-					if(alarmSplit[1].equals("CPU-LOWER")){	
+					if(alarmSplit[1].equals("CPU-LOWER") || alarmSplit[1].equals("NETWORK-IN-LOWER")){	
 						System.out.print(getActiveMachines()+"\n");
 						if(getActiveMachines()>2){
 							terminateMachine(alarmSplit[0]);
@@ -126,10 +127,13 @@ public class AutoScaler {
 					if(alarmSplit[1].equals("CPU-GREATER")){
 						counter++;
 					}
+					if(alarmSplit[1].equals("NETWORK-IN-GREATER")){
+						counter1++;
+					}
 				}
 			}
 
-			if(counter==getActiveMachines() || getAverageInstructionCount()>=MAX_AVERAGE) {
+			if(counter==getActiveMachines() || getAverageInstructionCount()>=MAX_AVERAGE ||counter1==getActiveMachines()) {
 				createMachine();
 			}
 
@@ -204,9 +208,11 @@ public class AutoScaler {
 		String alarmname=reservation_id+"/CPU-GREATER";
 		String alarmname2=reservation_id+"/CPU-LOWER";
 		String alarmname3=reservation_id+"/NETWORK-IN-LOWER";
+		String alarmname4=reservation_id+"/NETWORK-IN-GREATER";
 		putMetricAlarmCPUGreater(alarmname,reservation_id);
 		putMetricAlarmCPULower(alarmname2,reservation_id);
 		putMetricAlarmNetworkInLower(alarmname3,reservation_id);
+		putMetricAlarmNetworkInGreater(alarmname4,reservation_id);
 
 		updateInstanceID_IP();
 		manageActiveInstances(InstanceID_IP.get(reservation_id),"add");
@@ -219,6 +225,7 @@ public class AutoScaler {
 		deleteAlarm(InstanceId+"/CPU-GREATER");
 		deleteAlarm(InstanceId+"/CPU-LOWER");
 		deleteAlarm(InstanceId+"/NETWORK-IN-LOWER");
+		deleteAlarm(InstanceId+"/NETWORK-IN-GREATER");
 			
 		manageActiveInstances(InstanceID_IP.get(InstanceId),"remove");
 		InstanceID_IP.remove(InstanceId);
@@ -312,7 +319,30 @@ public class AutoScaler {
             request.withNamespace("AWS/EC2");
             request.withPeriod(60);
             request.withStatistic("Average");
-            request.withThreshold(20.0);
+            request.withThreshold(20000.0);
+            request.withActionsEnabled(false);
+            request.withAlarmDescription("Alarm when server network input is lower than 20 bytes.");
+            request.withDimensions(dims);
+
+        cw.putMetricAlarm(request);
+        System.out.printf("Successfully created alarm with name %s\n", alarmName);
+	}
+	private static void putMetricAlarmNetworkInGreater(String alarmName, String instanceId) {
+        Dimension instanceDimension = new Dimension();
+            instanceDimension.setName("InstanceId");
+            List<Dimension> dims = new ArrayList<Dimension>();
+			dims.add(instanceDimension);
+			instanceDimension.setValue(instanceId);
+
+        PutMetricAlarmRequest request = new PutMetricAlarmRequest();
+            request.withAlarmName(alarmName);
+            request.withComparisonOperator("GreaterThanThreshold");
+            request.withEvaluationPeriods(1);
+            request.withMetricName("NetworkIn");
+            request.withNamespace("AWS/EC2");
+            request.withPeriod(60);
+            request.withStatistic("Average");
+            request.withThreshold(50000.0);
             request.withActionsEnabled(false);
             request.withAlarmDescription("Alarm when server network input is lower than 20 bytes.");
             request.withDimensions(dims);
