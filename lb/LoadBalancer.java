@@ -159,7 +159,6 @@ public class LoadBalancer {
 			storeMetric(scan_type, area, block_count);
 
 			//Then updates the ICountTotal and ICountSeparate -estimate
-			//updateInstanceStates(chosenInstanceIP, estimate);
 			updateInstanceStates(chosenInstanceIP, -estimate);
 			getInstanceStates();
 
